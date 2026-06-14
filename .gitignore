@@ -1,0 +1,26 @@
+# Build
+workspace/build/
+*.o *.ko *.bin *.img *.dtb *.deb *.rpm
+
+# System
+.DS_Store
+Thumbs.db
+*.tmp *.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Runtime
+*.log *.pid
+
+# Session recovery (per-session, not versioned)
+.hot/recovery.md
+.hot/recovery.bak.md
+
+# Personal allowlist
+.claude/settings.local.json
+
+# Build artifacts
+workspace/deploy/artifacts/

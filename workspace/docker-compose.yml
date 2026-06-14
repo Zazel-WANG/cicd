@@ -1,0 +1,47 @@
+# 鲁班猫 CI/CD 平台 - 服务编排
+# 用法：docker compose up -d gitea   （先启动 Gitea）
+#       docker compose up -d jenkins （再启动 Jenkins）
+#       docker compose up -d         （启动全部）
+
+name: lubancat-cicd
+
+services:
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    restart: unless-stopped
+    ports:
+      - "3000:3000"   # Web UI
+      - "2222:22"     # SSH git 克隆（用 2222 避免和主机 SSH 冲突）
+    volumes:
+      - /data/gitea:/data
+    environment:
+      - GITEA__server__DOMAIN=10.0.0.1
+      - GITEA__server__SSH_DOMAIN=10.0.0.1
+      - GITEA__server__ROOT_URL=http://10.0.0.1:3000
+      - TZ=Asia/Shanghai
+    networks:
+      - ci-network
+
+  jenkins:
+    build:
+      context: .
+      dockerfile: Jenkins.Dockerfile
+    image: lubancat-jenkins:latest
+    container_name: jenkins
+    restart: unless-stopped
+    ports:
+      - "8080:8080"   # Web UI
+      - "50000:50000" # Agent 通信
+    volumes:
+      - /data/jenkins:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock  # Jenkins 内调用 Docker
+    environment:
+      - JAVA_OPTS=-Xmx1024m -Duser.timezone=Asia/Shanghai
+      - TZ=Asia/Shanghai
+    networks:
+      - ci-network
+
+networks:
+  ci-network:
+    driver: bridge

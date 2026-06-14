@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+    stages {
+        stage('Cross Compile') {
+            steps {
+                sh 'echo "编译" > /tmp/current-stage.txt'
+                sh '''
+                    VER=$(git rev-parse --short HEAD)
+                    make clean && make ARCH=arm64 VERSION=${VER}
+                '''
+            }
+        }
+        stage('Unit Test') {
+            steps {
+                sh 'echo "单元测试" > /tmp/current-stage.txt'
+                sh 'make test ARCH=arm64'
+            }
+        }
+        stage('Verify Binary') {
+            steps {
+                sh 'echo "二进制验证" > /tmp/current-stage.txt'
+                sh '''
+                    VER=$(git rev-parse --short HEAD)
+                    make verify ARCH=arm64 VERSION=${VER}
+                '''
+            }
+        }
+        stage('Deploy to LubanCat') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh 'echo "部署运行" > /tmp/current-stage.txt'
+                sh '''
+                    VER=$(git rev-parse --short HEAD)
+                    scp -o StrictHostKeyChecking=no build/hello-${VER} HUAWEI@10.0.0.2:E:/AI-helper/CICD_patform/workspace/deploy/artifacts/hello-${VER}
+                    ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\AI-helper\\CICD_patform\\workspace\\deploy\\deploy-to-lubancat.ps1 -ArtifactPath E:\\AI-helper\\CICD_patform\\workspace\\deploy\\artifacts\\hello-${VER} -TargetIP 192.168.137.100"
+                '''
+            }
+        }
+    }
+    post {
+        success {
+            sh '''
+                VER=$(git rev-parse --short HEAD)
+                { echo "SUCCESS"; echo "-"; git log -1 --format=%s; } | base64 -w0 > /tmp/build-msg.b64
+                scp -o StrictHostKeyChecking=no /tmp/build-msg.b64 HUAWEI@10.0.0.2:E:/AI-helper/CICD_patform/workspace/deploy/artifacts/build-status.txt
+                ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\AI-helper\\CICD_patform\\workspace\\deploy\\notify-build.ps1"
+            '''
+        }
+        failure {
+            sh '''
+                VER=$(git rev-parse --short HEAD)
+                { echo "FAILED"; cat /tmp/current-stage.txt; git log -1 --format=%s; } | base64 -w0 > /tmp/build-msg.b64
+                scp -o StrictHostKeyChecking=no /tmp/build-msg.b64 HUAWEI@10.0.0.2:E:/AI-helper/CICD_patform/workspace/deploy/artifacts/build-status.txt
+                ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\AI-helper\\CICD_patform\\workspace\\deploy\\notify-build.ps1"
+            '''
+        }
+    }
+}
