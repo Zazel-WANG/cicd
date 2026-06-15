@@ -6,14 +6,14 @@ pipeline {
                 sh 'echo "编译" > /tmp/current-stage.txt'
                 sh '''
                     VER=$(git rev-parse --short HEAD)
-                    make clean && make ARCH=arm64 VERSION=${VER}
+                    cd workspace/project-template && make clean && make ARCH=arm64 VERSION=${VER}
                 '''
             }
         }
         stage('Unit Test') {
             steps {
                 sh 'echo "单元测试" > /tmp/current-stage.txt'
-                sh 'make test ARCH=arm64'
+                sh 'cd workspace/project-template && make test ARCH=arm64'
             }
         }
         stage('Verify Binary') {
@@ -21,7 +21,7 @@ pipeline {
                 sh 'echo "二进制验证" > /tmp/current-stage.txt'
                 sh '''
                     VER=$(git rev-parse --short HEAD)
-                    make verify ARCH=arm64 VERSION=${VER}
+                    cd workspace/project-template && make verify ARCH=arm64 VERSION=${VER}
                 '''
             }
         }
