@@ -4,19 +4,19 @@ pipeline {
         stage('Cross Compile') {
             steps {
                 sh 'echo "编译" > /tmp/current-stage.txt'
-                sh 'make clean && make ARCH=arm64'
+                sh 'cd workspace/repos/test-ci && make clean && make ARCH=arm64'
             }
         }
         stage('Unit Test') {
             steps {
                 sh 'echo "单元测试" > /tmp/current-stage.txt'
-                sh 'make test ARCH=arm64'
+                sh 'cd workspace/repos/test-ci && make test ARCH=arm64'
             }
         }
         stage('Verify Binary') {
             steps {
                 sh 'echo "二进制验证" > /tmp/current-stage.txt'
-                sh 'make verify ARCH=arm64'
+                sh 'cd workspace/repos/test-ci && make verify ARCH=arm64'
             }
         }
         stage('Deploy to LubanCat') {
