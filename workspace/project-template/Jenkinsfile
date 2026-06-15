@@ -33,6 +33,7 @@ pipeline {
                 sh 'echo "部署运行" > /tmp/current-stage.txt'
                 sh '''
                     VER=$(git rev-parse --short HEAD)
+                    cd workspace/project-template
                     scp -o StrictHostKeyChecking=no build/hello-${VER} HUAWEI@10.0.0.2:E:/AI-helper/projects/cicd/workspace/deploy/artifacts/hello-${VER}
                     ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\AI-helper\\projects\\cicd\\workspace\\deploy\\deploy-to-lubancat.ps1 -ArtifactPath E:\\AI-helper\\projects\\cicd\\workspace\\deploy\\artifacts\\hello-${VER} -TargetIP 192.168.137.100"
                 '''
