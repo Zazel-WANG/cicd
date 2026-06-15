@@ -138,7 +138,7 @@ git push gitea main    # → Gitea，Jenkins 自动构建
 
 | Job 名 | 类型 | Gitea 仓库 | Jenkinsfile 路径 | 状态 |
 |--------|------|-----------|-----------------|:--:|
-| `cicd` (project-template) | Multibranch Pipeline | `wangzhongqi/cicd` | `workspace/project-template/Jenkinsfile` | ✅ |
+| `cicd`（原 project-template） | Multibranch Pipeline | `wangzhongqi/cicd` | `workspace/project-template/Jenkinsfile` | ✅ |
 | `test-pipeline` | Pipeline | `wangzhongqi/cicd` | `workspace/repos/test-ci/Jenkinsfile` | 已禁用 |
 | `project-template-old` | Pipeline | — | — | 归档 |
 
