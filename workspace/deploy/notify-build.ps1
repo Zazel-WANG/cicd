@@ -1,5 +1,5 @@
 # 所有信息从 build-status.txt 读取（base64 编码），零命令行参数
-$statusFile = "E:\AI-helper\CICD_patform\workspace\deploy\artifacts\build-status.txt"
+$statusFile = "E:\AI-helper\projects\cicd\workspace\deploy\artifacts\build-status.txt"
 
 $status = "TEST"
 $stage = ""

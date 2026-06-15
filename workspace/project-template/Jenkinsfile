@@ -33,8 +33,8 @@ pipeline {
                 sh 'echo "部署运行" > /tmp/current-stage.txt'
                 sh '''
                     VER=$(git rev-parse --short HEAD)
-                    scp -o StrictHostKeyChecking=no build/hello-${VER} HUAWEI@10.0.0.2:E:/AI-helper/CICD_patform/workspace/deploy/artifacts/hello-${VER}
-                    ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\AI-helper\\CICD_patform\\workspace\\deploy\\deploy-to-lubancat.ps1 -ArtifactPath E:\\AI-helper\\CICD_patform\\workspace\\deploy\\artifacts\\hello-${VER} -TargetIP 192.168.137.100"
+                    scp -o StrictHostKeyChecking=no build/hello-${VER} HUAWEI@10.0.0.2:E:/AI-helper/projects/cicd/workspace/deploy/artifacts/hello-${VER}
+                    ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\AI-helper\\projects\\cicd\\workspace\\deploy\\deploy-to-lubancat.ps1 -ArtifactPath E:\\AI-helper\\projects\\cicd\\workspace\\deploy\\artifacts\\hello-${VER} -TargetIP 192.168.137.100"
                 '''
             }
         }
@@ -44,16 +44,16 @@ pipeline {
             sh '''
                 VER=$(git rev-parse --short HEAD)
                 { echo "SUCCESS"; echo "-"; git log -1 --format=%s; } | base64 -w0 > /tmp/build-msg.b64
-                scp -o StrictHostKeyChecking=no /tmp/build-msg.b64 HUAWEI@10.0.0.2:E:/AI-helper/CICD_patform/workspace/deploy/artifacts/build-status.txt
-                ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\AI-helper\\CICD_patform\\workspace\\deploy\\notify-build.ps1"
+                scp -o StrictHostKeyChecking=no /tmp/build-msg.b64 HUAWEI@10.0.0.2:E:/AI-helper/projects/cicd/workspace/deploy/artifacts/build-status.txt
+                ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\AI-helper\\projects\\cicd\\workspace\\deploy\\notify-build.ps1"
             '''
         }
         failure {
             sh '''
                 VER=$(git rev-parse --short HEAD)
                 { echo "FAILED"; cat /tmp/current-stage.txt; git log -1 --format=%s; } | base64 -w0 > /tmp/build-msg.b64
-                scp -o StrictHostKeyChecking=no /tmp/build-msg.b64 HUAWEI@10.0.0.2:E:/AI-helper/CICD_patform/workspace/deploy/artifacts/build-status.txt
-                ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\AI-helper\\CICD_patform\\workspace\\deploy\\notify-build.ps1"
+                scp -o StrictHostKeyChecking=no /tmp/build-msg.b64 HUAWEI@10.0.0.2:E:/AI-helper/projects/cicd/workspace/deploy/artifacts/build-status.txt
+                ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\AI-helper\\projects\\cicd\\workspace\\deploy\\notify-build.ps1"
             '''
         }
     }
