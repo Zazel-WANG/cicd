@@ -47,7 +47,7 @@ E:\AI-helper\projects\cicd\    ← 独立 git 仓库
 ├── .claude/settings.json
 ├── .hot/recovery.md           ← 会话恢复（自动）
 ├── workspace/
-│   ├── deploy/                ← 部署脚本（deploy-to-lubancat.ps1 等）
+│   ├── deploy/                ← 部署脚本模板（其他项目复制后自包含，不应跨项目引用）
 │   ├── docs/                  ← 操作手册和学习笔记
 │   ├── project-template/      ← CI 模板（Jenkins cicd job 的 Jenkinsfile 在此）
 │   ├── repos/test-ci/         ← 测试项目（Jenkins test-pipeline 的 Jenkinsfile 在此，job 已禁用）
