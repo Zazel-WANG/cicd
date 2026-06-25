@@ -1,5 +1,64 @@
 # 变更日志
 
+## 2026-06-25 — Phase 2 OS 镜像 CI/CD：首次构建成功 + 去重修复
+
+### 成果
+- **os-builder Docker 镜像**：`workspace/os-build/Dockerfile`，Ubuntu 20.04 + LubanCat SDK 全构建依赖
+- **首次全编成功**：3.6GB `update.img` 产出，经 Jenkins `os-main` Pipeline 全链路验证
+
+### Jenkins Job 配置
+
+| Job | 类型 | Gitea 仓库 | 分支 | Jenkinsfile | 触发 |
+|------|------|------|------|------|------|
+| `os-main` | Pipeline | `wangzhongqi/kernel` | `*/main` | `Jenkinsfile` | pollSCM `H 12,17 * * *` + webhook |
+| `os-feature` | Multibranch | `wangzhongqi/kernel` | `feature/*` | `Jenkinsfile-feature` | webhook (push → indexing) |
+
+### 核心设计
+- **零噪音**：pollSCM 只在 kernel.git 有新 commit 时触发 → 无 commit = 无构建记录
+- **增量智能**：`ci-build.sh` 内 `repo sync` 检测全部 8 个仓库变更，manifest 未变则 `exit 0`
+- **双轨**：feature push → webhook → os-feature Multibranch 扫描 + 增量构建；main → 定时 check 全编
+
+### 修复项
+- kernel.git `Jenkinsfile` 去重（同一 pipeline 写了两遍）
+- 定时从 `H 12,20` → `H 12,17`（下午 5 点）
+- kernel.git 无 webhook → 新增 2 个（gitea-webhook/post + os-feature/indexing）
+- `ci-build.sh` 拉回 cicd 本地版本控制
+
+### 关键教训
+- Linux SDK 源码**绝不经过 Windows 文件系统**（CRLF/symlink/权限损坏）
+- `repo sync -c --no-repo-verify` 首次从 Gitea 拉 8 个仓库耗时较长
+
+### 文件
+- `workspace/os-build/`：Dockerfile + Jenkinsfile-main + Jenkinsfile-feature + ci-build.sh + sync-repos.sh
+
+## 2026-06-17 — embed-hello: AI 交叉编译流水线（来自 embed-hello 侧，Claude 提交）
+
+### 架构决策
+- **Route B 落地**：embed-hello 首个采用项目自包含构建镜像模式
+  - `workspace/Dockerfile.build` — embed-hello-builder 镜像（Ubuntu 22.04 + aarch64 gcc + 板提取 sysroot）
+  - `workspace/scripts/sysroot-populate.sh` — 从鲁班猫 SSH 拉取 GStreamer/X11/glib/RKNN 交叉编译依赖
+  - Jenkinsfile 用 `sh + docker run` 执行构建，无需 Docker Pipeline 插件
+
+### Jenkins 容器变更
+- Debian `docker.io` 包不含 CLI → 从宿主机 `docker cp /usr/bin/docker jenkins:/usr/local/bin/` 复制 Docker CLI 二进制（v29.1.3）
+- `docker-compose.yml` 新增 `group_add: "124"`（docker 组 GID 映射）
+
+### 最终验证
+- Build #32-#35 全部 SUCCESS，5 个 AI 二进制（ai-query/infer/gst/x11/full）自动部署到 `/home/cat/deploy-dev/ai/`
+- 清理后代码仓库瘦身 ~45MB（旧构建历史 + 临时脚本 + 本地 sysroot 副本）
+- `rknn_api.h` 统一为 SDK 697 行版，消除本地 804 行版本不一致隐患
+
+### 关键教训
+1. **sysroot 传递依赖链**：GStreamer → libunwind → liblzma / libdw → libbz2，X11 → libXdmcp → libbsd → libmd。手动列举脆弱，应考虑 `readelf -d` 递归自动化
+2. **glibc linker scripts 保护**：板子 libc.so.6 是 ELF binary，会覆盖交叉编译器的 linker script → Dockerfile 需 `apt reinstall libc6-dev-arm64-cross`
+3. **Docker mount 路径**：Jenkins 容器内路径 ≠ 宿主机路径，`-v` 必须用宿主机路径（`/var/jenkins_home` → `/data/jenkins`）
+4. **网络拓扑**：Jenkins 容器在 10.0.0.x 网段，无法直连 192.168.137.x（鲁班猫），部署需经 Windows 跳板
+5. **Docker CLI 获取**：Debian trixie 的 `docker.io` 包不提供 `/usr/bin/docker`，需从宿主机直接复制或用 Docker 官方静态二进制
+
+### 可复用模式
+- `sysroot-populate.sh` → 任何需要目标板原生库的交叉编译项目
+- `Dockerfile.build` + `sh docker run` → 项目自包含构建环境，Jenkins 只提供 Docker socket
+
 ## 2026-06-16 — 部署脚本项目化 + Gitea 插件 401 修复（来自 embed-hello 侧）
 
 ### 跨项目问题暴露

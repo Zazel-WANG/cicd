@@ -1,0 +1,31 @@
+pipeline {
+    agent any
+    options { skipDefaultCheckout() }
+    triggers { pollSCM('H 12,17 * * *') }
+
+    stages {
+        stage('Build') {
+            steps {
+                sh 'echo "OS镜像构建" > /tmp/current-stage.txt'
+                sh 'docker run --rm --privileged -v /data/os-workspace:/workspace os-builder:latest /workspace/ci-build.sh'
+            }
+        }
+    }
+    post {
+        success {
+            sh '''
+                VER=$(date +%Y%m%d-%H%M)
+                { echo "SUCCESS"; echo "${VER}"; echo "OS image built"; } | base64 -w0 > /tmp/build-msg.b64
+                scp -o StrictHostKeyChecking=no /tmp/build-msg.b64 HUAWEI@10.0.0.2:E:/AI-helper/projects/cicd/workspace/deploy/artifacts/build-status.txt
+                ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\\\AI-helper\\\\projects\\\\cicd\\\\workspace\\\\deploy\\\\notify-build.ps1"
+            '''
+        }
+        failure {
+            sh '''
+                { echo "FAILED"; cat /tmp/current-stage.txt; echo "OS build failed"; } | base64 -w0 > /tmp/build-msg.b64
+                scp -o StrictHostKeyChecking=no /tmp/build-msg.b64 HUAWEI@10.0.0.2:E:/AI-helper/projects/cicd/workspace/deploy/artifacts/build-status.txt
+                ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\\\AI-helper\\\\projects\\\\cicd\\\\workspace\\\\deploy\\\\notify-build.ps1"
+            '''
+        }
+    }
+}

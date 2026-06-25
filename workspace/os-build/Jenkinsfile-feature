@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build U-Boot + Kernel') {
+            steps {
+                sh 'echo "feature编译" > /tmp/current-stage.txt'
+                sh '''
+                    # 把 Jenkins checkout 的 feature 分支覆盖到 Volume
+                    rsync -a --delete ${WORKSPACE}/ /data/os-workspace/kernel/ 2>&1 | tail -1
+                    docker run --rm --privileged \
+                        -v /data/os-workspace:/workspace \
+                        os-builder:latest bash -c "
+                            cd /workspace
+                            ln -sf /usr/bin/python3 /usr/bin/python
+                            ./build.sh BoardConfig-LubanCat-3588-debian-xfce.mk 2>&1 | tail -1
+                            ./build.sh uboot 2>&1 | tail -3
+                            ./build.sh extboot 2>&1 | tail -3
+                        "
+                '''
+            }
+        }
+    }
+    post {
+        success {
+            sh '''
+                VER=$(git log -1 --format=%h)
+                { echo "SUCCESS"; echo "feature/${BRANCH_NAME} ${VER}"; echo "feature build passed"; } | base64 -w0 > /tmp/build-msg.b64
+                scp -o StrictHostKeyChecking=no /tmp/build-msg.b64 HUAWEI@10.0.0.2:E:/AI-helper/projects/cicd/workspace/deploy/artifacts/build-status.txt
+                ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\\\AI-helper\\\\projects\\\\cicd\\\\workspace\\\\deploy\\\\notify-build.ps1"
+            '''
+        }
+        failure {
+            sh '''
+                { echo "FAILED"; cat /tmp/current-stage.txt; echo "feature build failed"; } | base64 -w0 > /tmp/build-msg.b64
+                scp -o StrictHostKeyChecking=no /tmp/build-msg.b64 HUAWEI@10.0.0.2:E:/AI-helper/projects/cicd/workspace/deploy/artifacts/build-status.txt
+                ssh -o StrictHostKeyChecking=no HUAWEI@10.0.0.2 "powershell E:\\\\AI-helper\\\\projects\\\\cicd\\\\workspace\\\\deploy\\\\notify-build.ps1"
+            '''
+        }
+    }
+}
