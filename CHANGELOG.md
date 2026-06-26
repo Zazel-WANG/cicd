@@ -1,5 +1,28 @@
 # 变更日志
 
+## 2026-06-26 — Plan D：统一 UID 1000 + 增量编译落地
+
+### 核心修复
+- **UID 1000 统一**：Dockerfile 创建 builder(UID 1000) + NOPASSWD sudo；所有 `docker run` 加 `--user 1000:1000`
+- **rsync 根因定位**：Jenkins 容器未挂载 `/data/os-workspace`，rsync 搬到 os-builder 容器内 + 挂载 workspace
+- **`set -eo pipefail`**：消灭 `| tail -N` 管道吞错误 → 构建失败假报 SUCCESS
+- **python3 symlink 进镜像**：`RUN ln -sf /usr/bin/python3 /usr/bin/python`（运行时 UID 1000 无权写 /usr/bin/）
+- **`-j4` 规避 Mali 并行竞态**：`-j$(nproc)` (=6) 导致 `ar` 打包时 .o 未编译完
+- **`| tail -N` 全部移除**：完整构建输出可调试
+
+### Feature 增量编译
+- 废弃 SDK `build.sh uboot/extboot`，改为直接 `make ARCH=arm64 -j4`
+- `rsync -a`（无 `--delete`）保留 .o 文件，首次全编 ~5min，后续增量 ~2min
+- 共享 workspace 模式：`.o` 文件留在 `/data/os-workspace/kernel/`
+
+### 文件变更
+- `workspace/os-build/Dockerfile`：+builder + NOPASSWD sudo + python3 symlink
+- `workspace/os-build/Jenkinsfile-feature`：全量重写（增量 make 模式）
+- `workspace/os-build/Jenkinsfile-main`：+`--user 1000:1000`
+
+### Webhook 已知问题
+- Gitea webhook 间歇不可靠，需后续排查
+
 ## 2026-06-25 — Phase 2 OS 镜像 CI/CD：首次构建成功 + 去重修复
 
 ### 成果

@@ -2,20 +2,21 @@ pipeline {
     agent any
 
     stages {
-        stage('Build U-Boot + Kernel') {
+        stage('Incremental Kernel Build') {
             steps {
                 sh 'echo "feature编译" > /tmp/current-stage.txt'
                 sh '''
-                    # 把 Jenkins checkout 的 feature 分支覆盖到 Volume
-                    rsync -a --delete ${WORKSPACE}/ /data/os-workspace/kernel/ 2>&1 | tail -1
-                    docker run --rm --privileged \
+                    WS_HOST=$(echo "${WORKSPACE}" | sed "s|/var/jenkins_home|/data/jenkins|")
+                    docker run --rm --user 1000:1000 \
                         -v /data/os-workspace:/workspace \
+                        -v "${WS_HOST}:/src:ro" \
                         os-builder:latest bash -c "
-                            cd /workspace
-                            ln -sf /usr/bin/python3 /usr/bin/python
-                            ./build.sh BoardConfig-LubanCat-3588-debian-xfce.mk 2>&1 | tail -1
-                            ./build.sh uboot 2>&1 | tail -3
-                            ./build.sh extboot 2>&1 | tail -3
+                            set -eo pipefail
+                            rsync -a /src/ /workspace/kernel/
+                            cd /workspace/kernel
+                            export CROSS_COMPILE=/workspace/prebuilts/gcc/linux-x86/aarch64/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+                            make ARCH=arm64 lubancat_linux_rk3588_defconfig
+                            make ARCH=arm64 -j4
                         "
                 '''
             }

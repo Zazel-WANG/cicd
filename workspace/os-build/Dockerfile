@@ -28,4 +28,13 @@ RUN curl -sSL https://mirrors.tuna.tsinghua.edu.cn/git/git-repo/repo \
         -o /usr/local/bin/repo && \
     chmod +x /usr/local/bin/repo
 
+# 创建 builder 用户 (UID 1000, 与主机 embedsys 和 Jenkins jenkins 一致)
+# NOPASSWD sudo: build.sh 中的 sudo mount/umount 需要 root 权限
+RUN useradd -u 1000 -m -s /bin/bash builder && \
+    echo "builder ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builder
+
+# python3 → python 符号链接 (SDK 脚本依赖 `python` 命令)
+# 放在 Dockerfile 而非运行时，因为 UID 1000 无权写 /usr/bin/
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
 WORKDIR /workspace
