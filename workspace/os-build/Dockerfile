@@ -44,4 +44,9 @@ RUN git config --global user.email "ci@os-builder.local" && \
     git config --global --add safe.directory /workspace && \
     git config --global --add safe.directory '*'
 
+# git-restore-mtime: rsync 后恢复文件 git commit 时间戳, 让 make 能正确增量编译
+RUN curl -sSL https://raw.githubusercontent.com/MestreLion/git-tools/main/git-restore-mtime \
+        -o /usr/local/bin/git-restore-mtime && \
+    chmod +x /usr/local/bin/git-restore-mtime
+
 WORKDIR /workspace

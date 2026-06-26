@@ -14,8 +14,9 @@ pipeline {
                             set -eo pipefail
                             rsync -a /src/ /workspace/kernel/
                             cd /workspace/kernel
+                            git restore-mtime --quiet
                             export CROSS_COMPILE=/workspace/prebuilts/gcc/linux-x86/aarch64/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
-                            make ARCH=arm64 lubancat_linux_rk3588_defconfig
+                            test -f .config || make ARCH=arm64 lubancat_linux_rk3588_defconfig
                             make ARCH=arm64 -j4
                         "
                 '''
