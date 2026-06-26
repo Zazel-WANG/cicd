@@ -8,13 +8,13 @@ pipeline {
                 sh '''
                     WS_HOST=$(echo "${WORKSPACE}" | sed "s|/var/jenkins_home|/data/jenkins|")
                     docker run --rm --user 1000:1000 \
-                        -v /data/os-workspace:/workspace \
+                        -v /data/os-workspace-feature:/workspace \
+                        -v /data/os-workspace/prebuilts:/workspace/prebuilts:ro \
                         -v "${WS_HOST}:/src:ro" \
                         os-builder:latest bash -c "
                             set -eo pipefail
-                            rsync -a /src/ /workspace/kernel/
-                            cd /workspace/kernel
-                            git restore-mtime --quiet
+                            rsync -a /src/ /workspace/
+                            cd /workspace
                             export CROSS_COMPILE=/workspace/prebuilts/gcc/linux-x86/aarch64/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
                             test -f .config || make ARCH=arm64 lubancat_linux_rk3588_defconfig
                             make ARCH=arm64 -j4
