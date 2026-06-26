@@ -37,4 +37,11 @@ RUN useradd -u 1000 -m -s /bin/bash builder && \
 # 放在 Dockerfile 而非运行时，因为 UID 1000 无权写 /usr/bin/
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
+# git 全局配置 (repo sync + safe.directory 需要)
+RUN git config --global user.email "ci@os-builder.local" && \
+    git config --global user.name "OS Builder CI" && \
+    git config --global --add safe.directory /workspace/.repo/manifests && \
+    git config --global --add safe.directory /workspace && \
+    git config --global --add safe.directory '*'
+
 WORKDIR /workspace

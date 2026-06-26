@@ -2,14 +2,12 @@
 set -eo pipefail
 cd /workspace
 
-git config --global --add safe.directory /workspace/.repo/manifests 2>/dev/null || true
-git config --global --add safe.directory /workspace 2>/dev/null || true
-ln -sf /usr/bin/python3 /usr/bin/python
+# git 全局配置已进 Dockerfile
 ln -sf rootfs.ext4 rockdev/rootfs.img 2>/dev/null || true
 
 echo "=== repo sync ==="
 BEFORE=$(git -C .repo/manifests log -1 --format=%h 2>/dev/null)
-.repo/repo/repo sync -c --no-repo-verify 2>&1 | tail -3
+.repo/repo/repo sync -c --no-repo-verify
 AFTER=$(git -C .repo/manifests log -1 --format=%h 2>/dev/null)
 
 if [ "$BEFORE" = "$AFTER" ] && [ -n "$BEFORE" ]; then
@@ -19,8 +17,8 @@ fi
 
 echo "CHANGED: $BEFORE -> $AFTER"
 echo "=== build ==="
-./build.sh BoardConfig-LubanCat-3588-debian-xfce.mk 2>&1 | tail -1
-./build.sh 2>&1 | tail -5
+./build.sh BoardConfig-LubanCat-3588-debian-xfce.mk
+./build.sh
 
 echo "=== archive ==="
 VER=$(date +%Y%m%d-%H%M)
