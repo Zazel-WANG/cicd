@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 cd /workspace
 
 git config --global --add safe.directory /workspace/.repo/manifests 2>/dev/null || true
