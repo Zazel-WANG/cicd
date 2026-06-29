@@ -43,7 +43,7 @@ pipeline {
     post {
         always {
             sh '''
-                USAGE=$(df /data 2>/dev/null | tail -1 | awk "{print \$5}" | sed "s/%//")
+                USAGE=$(df --output=pcent /data | tail -1 | tr -d " %")
                 if [ -n "${USAGE}" ] && [ "${USAGE}" -gt 90 ]; then
                     echo "WARNING: Disk usage at ${USAGE}%!" >&2
                 fi
