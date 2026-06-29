@@ -1,7 +1,7 @@
 pipeline {
     agent any
     options { skipDefaultCheckout() }
-    triggers { pollSCM('H 12,17 * * *') }
+    triggers { pollSCM('0 12 * * *\n0 17 * * *') }
 
     stages {
         stage('Build') {
