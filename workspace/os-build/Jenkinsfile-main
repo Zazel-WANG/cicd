@@ -7,7 +7,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'echo "OS镜像构建" > /tmp/current-stage.txt'
-                sh 'docker run --rm --user 1000:1000 --privileged -v /data/os-workspace:/workspace os-builder:latest /workspace/ci-build.sh'
+                sh 'docker run --rm --user 1000:1000 --group-add 6 --privileged -v /data/os-workspace:/workspace os-builder:latest /workspace/ci-build.sh'
             }
         }
     }
