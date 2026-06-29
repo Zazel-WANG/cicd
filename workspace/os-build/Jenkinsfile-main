@@ -1,10 +1,40 @@
 pipeline {
     agent any
     options { skipDefaultCheckout() }
-    triggers { pollSCM('0 12 * * *\n0 17 * * *') }
+    triggers { cron('0 12,17 * * *') }
+
+    environment {
+        KERNEL_REPO = 'http://10.0.0.1:3000/wangzhongqi/kernel.git'
+        HAS_CHANGES = 'false'
+    }
 
     stages {
+        stage('Check changes') {
+            steps {
+                script {
+                    def remoteHead = sh(script: "git ls-remote ${KERNEL_REPO} refs/heads/main | cut -f1", returnStdout: true).trim()
+                    def lastBuiltFile = '/tmp/os-main-last-built.txt'
+                    def lastBuilt = 'none'
+                    try {
+                        lastBuilt = readFile(file: lastBuiltFile).trim()
+                    } catch (e) {
+                        echo 'No previous build record, will build'
+                    }
+                    echo "Remote HEAD: ${remoteHead}"
+                    echo "Last built:  ${lastBuilt}"
+                    if (remoteHead == lastBuilt) {
+                        echo 'No changes detected. Skipping build.'
+                        env.HAS_CHANGES = 'false'
+                    } else {
+                        writeFile(file: lastBuiltFile, text: remoteHead)
+                        env.HAS_CHANGES = 'true'
+                        echo 'Changes confirmed.'
+                    }
+                }
+            }
+        }
         stage('Build') {
+            when { expression { env.HAS_CHANGES == 'true' } }
             steps {
                 sh 'echo "OS镜像构建" > /tmp/current-stage.txt'
                 sh 'docker run --rm --user 1000:1000 --group-add 6 --privileged -v /data/os-workspace:/workspace os-builder:latest /workspace/ci-build.sh'
