@@ -5,7 +5,6 @@ pipeline {
 
     environment {
         KERNEL_REPO = 'http://10.0.0.1:3000/wangzhongqi/kernel.git'
-        HAS_CHANGES = 'false'
     }
 
     stages {
@@ -24,24 +23,37 @@ pipeline {
                     echo "Last built:  ${lastBuilt}"
                     if (remoteHead == lastBuilt) {
                         echo 'No changes detected. Skipping build.'
-                        env.HAS_CHANGES = 'false'
+                        env.SHOULD_BUILD = 'false'
                     } else {
                         writeFile(file: lastBuiltFile, text: remoteHead)
-                        env.HAS_CHANGES = 'true'
+                        env.SHOULD_BUILD = 'true'
                         echo 'Changes confirmed.'
                     }
                 }
             }
         }
         stage('Build') {
-            when { expression { env.HAS_CHANGES == 'true' } }
+            when { expression { env.SHOULD_BUILD == 'true' } }
             steps {
-                sh 'echo "OS镜像构建" > /tmp/current-stage.txt'
+                sh 'echo "OS 镜像构建" > /tmp/current-stage.txt'
                 sh 'docker run --rm --user 1000:1000 --group-add 6 --privileged -v /data/os-workspace:/workspace os-builder:latest /workspace/ci-build.sh'
             }
         }
     }
     post {
+        always {
+            sh '''
+                USAGE=$(df /data 2>/dev/null | tail -1 | awk "{print \$5}" | sed "s/%//")
+                if [ -n "${USAGE}" ] && [ "${USAGE}" -gt 90 ]; then
+                    echo "WARNING: Disk usage at ${USAGE}%!" >&2
+                fi
+                OUTPUT_DIR=/data/os-workspace/output
+                if [ -d "${OUTPUT_DIR}" ]; then
+                    cd "${OUTPUT_DIR}"
+                    ls -1t lubancat-*.img 2>/dev/null | tail -n +4 | xargs -r rm -v
+                fi
+            '''
+        }
         success {
             sh '''
                 VER=$(date +%Y%m%d-%H%M)
