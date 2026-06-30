@@ -30,11 +30,14 @@ services:
     image: lubancat-jenkins:latest
     container_name: jenkins
     restart: unless-stopped
+    group_add:
+      - "124"  # docker 组，访问 /var/run/docker.sock
     ports:
       - "8080:8080"   # Web UI
       - "50000:50000" # Agent 通信
     volumes:
       - /data/jenkins:/var/jenkins_home
+      - /data:/data                                 # 磁盘检查 + 旧镜像清理
       - /var/run/docker.sock:/var/run/docker.sock  # Jenkins 内调用 Docker
     environment:
       - JAVA_OPTS=-Xmx1024m -Duser.timezone=Asia/Shanghai
